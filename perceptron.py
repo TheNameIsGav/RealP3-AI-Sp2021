@@ -51,9 +51,9 @@ class PerceptronClassifier:
         # DO NOT ZERO OUT YOUR WEIGHTS BEFORE STARTING TRAINING, OR
         # THE AUTOGRADER WILL LIKELY DEDUCT POINTS.
 
-        for iteration in range(self.max_iterations):
-            print ("Starting iteration ", iteration, "...")
-            for i,data in enumerate(trainingData):
+        for i in range(self.max_iterations):
+            print ("Starting iteration ", i, "...")
+            for i, data in enumerate(trainingData):
                 actual = trainingLabels[i]
                 prediction = self.classify([data])[0]
                 if actual != prediction:

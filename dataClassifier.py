@@ -53,8 +53,6 @@ def basicFeatureExtractorFace(datum):
     Returns a set of pixel features indicating whether
     each pixel in the provided datum is an edge (1) or no edge (0)
     """
-    a = datum.getPixels()
-
     features = util.Counter()
     for x in range(FACE_DATUM_WIDTH):
         for y in range(FACE_DATUM_HEIGHT):
@@ -75,92 +73,59 @@ def enhancedFeatureExtractorDigit(datum):
 
     ##
     """
-    features =  basicFeatureExtractorDigit(datum)
+    f =  basicFeatureExtractorDigit(datum)
 
-    breaks = 0
-    pixels = datum.getPixels()
+    gaps = 0
+    pix = datum.getPixels()
     nonzero = 0
-    firstLeft = None
-    aboveCenter = 0
-    for i in range(len(pixels)):
-        for j in range(1,len(pixels[i])):
-            if pixels[i][j] != 0:
+    leftAlign = None
+    centered = 0
+    for i in range(len(pix)):
+        for j in range(1,len(pix[i])):
+            if pix[i][j] != 0:
                 nonzero += 1
-                if not firstLeft or j < firstLeft:
-                    firstLeft = j
-                if j <= (len(pixels) + 1) / 2:
-                    aboveCenter += 1
-            if pixels[i][j] != pixels[i][j - 1]:
-                breaks += 1
+                if not leftAlign or j < leftAlign:
+                    leftAlign = j
+                if j <= (len(pix) + 1) / 2:
+                    centered += 1
+            if pix[i][j] != pix[i][j - 1]:
+                gaps += 1
 
-    width = len(pixels[0]) - (firstLeft * 2)
-    firstTop = None
-    pastRight = 0
-    for j in range(len(pixels[0])):
-        col = [p[j] for p in pixels]
+    width = len(pix[0]) - (leftAlign * 2)
+    topAlign = None
+    rightAlign = 0
+    for j in range(len(pix[0])):
+        col = [p[j] for p in pix]
         for i in range(1,len(col)):
             if col[j] != 0:
                 nonzero += 1
-                if not firstTop or i < firstTop:
-                    firstTop = i
-                if i <= (len(pixels[0]) + 1) / 2:
-                    pastRight += 1
+                if not topAlign or i < topAlign:
+                    topAlign = i
+                if i <= (len(pix[0]) + 1) / 2:
+                    rightAlign += 1
             if col[i] != col[i - 1]:
-                breaks += 1
+                gaps += 1
 
-    height = len(pixels) - (firstTop * 2)
-    aspectRatio = float(width) / height
+    height = len(pix) - (topAlign * 2)
+    ratio = float(width) / height
     for n in range(5):
-        features[n] = breaks > 175 and 1.0 or 0.0
+        f[n] = gaps > 175 and 1.0 or 0.0
 
     for n in range(10):
-        features[(n + 1) * 10] = aspectRatio < 0.69
+        f[(n + 1) * 10] = ratio < 0.69
 
     for n in range(5):
-        features[-n] = nonzero > 300 and 1.0 or 0.0
+        f[-n] = nonzero > 300 and 1.0 or 0.0
 
-    percentAbove = float(aboveCenter) / nonzero
+    topPercent = float(centered) / nonzero
     for n in range(5):
-        features[-(n + 1) * 10] = percentAbove > 0.35 and 1.0 or 0.0
+        f[-(n + 1) * 10] = topPercent > 0.35 and 1.0 or 0.0
 
-    percentRight = float(pastRight) / nonzero
+    sidePercent = float(rightAlign) / nonzero
     for n in range(1000, 1005):
-        features[n] = percentRight < 0.27 and 1.0 or 0.0
+        f[n] = sidePercent < 0.27 and 1.0 or 0.0
 
-    return features
-
-
-    """
-    has_loop=False
-    run_dfs_hash={}
-    def run_dfs(x,y):
-        if x<0 or x>=DIGIT_DATUM_WIDTH:
-            return False
-        if y<0 or y>=DIGIT_DATUM_HEIGHT:
-            return False 
-        if datum.getPixel(x,y)==2 or datum.getPixel(x,y)==1:
-            return True
-
-        if (x,y) in visited.keys():
-            return True
-
-        visited[(x,y)]=True
-        return run_dfs(x-1,y) and run_dfs(x+1,y) and run_dfs(x,y-1) and run_dfs(x,y+1)
-
-    for x in range(DIGIT_DATUM_WIDTH):
-        for y in range(DIGIT_DATUM_HEIGHT):
-            visited={}
-            if datum.getPixel(x,y)==0:
-                if run_dfs(x,y)==True:
-                    has_loop=True
-                    break
-
-    features =  basicFeatureExtractorDigit(datum)
-    features["has_loop"] =has_loop
-
-    return features
-    """
-
+    return f
 
 
 def basicFeatureExtractorPacman(state):
@@ -201,31 +166,28 @@ def enhancedPacmanFeatures(state, action):
     For each state, this function is called with each legal action.
     It should return a counter with { <feature name> : <feature value>, ... }
     """
-    state=state.generateSuccessor(0,action)
-    features = util.Counter()
-    foods=state.getFood().asList()
-    pac=state.getPacmanPosition()
-    minD=9999
+    state = state.generateSuccessor(0, action)
+    f = util.Counter()
+    foods = state.getFood().asList()
+    pac = state.getPacmanPosition()
+    minimum = 9999
     for food in foods:
-        d=util.manhattanDistance(food,pac)
-        minD=min(d,minD)
-    if minD!=9999:
-        features["closest food"] = 1.0/minD
+        d = util.manhattanDistance(food,pac)
+        minimum = min(d,minimum)
+    if minimum != 9999:
+        f["closest food"] = 1.0/minimum
     else:
-        features["closest food"] = 2
-
-    if features["closest food"]==0:
-        pdb.set_trace()
+        f["closest food"] = 2
 
 
-    minD=10000000000
+    minimum = 10000000000
     for ghost in state.getGhostPositions():
-        d=util.manhattanDistance(pac,ghost) 
-        minD=min(d,minD)
+        d = util.manhattanDistance(pac, ghost) 
+        minimum = min(d, minimum)
 
-    features["closest ghost"] = minD#1/pow(minD,2)
+    f["closest ghost"] = minimum
 
-    return features
+    return f
 
 
 

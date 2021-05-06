@@ -14,6 +14,7 @@
 
 # Mira implementation
 import util
+import copy
 PRINT = True
 
 class MiraClassifier:
@@ -61,31 +62,41 @@ class MiraClassifier:
         representing a vector of values.
         """
         "*** YOUR CODE HERE ***"
-        bestWeights = None
-        bestCorrect = 0.0
-        weights = self.weights.copy()
+        leastErrors = 10 ** 10
+        labels = self.legalLabels
+
         for c in Cgrid:
-            self.weights = weights.copy()
-            for n in range(self.max_iterations):
-                for i, data in enumerate(trainingData):
-                    actual = trainingLabels[i]
+            # Initialize weights counter
+            self.weights = util.Counter()
+            for label in labels:
+                self.weights[label] = util.Counter()
+            
+            # Train perceptron on training data
+            for i in range(self.max_iterations):
+                print ("Iteration number %d" % i)
+                for data, actual in zip(trainingData, trainingLabels):
                     prediction = self.classify([data])[0]
-                    if actual != prediction:
-                        f = data.copy()
-                        tau = min(c, ((self.weights[prediction] - self.weights[actual]) * f + 1.0) / (2.0 * (f * f)))
-                        f.divideAll(1.0 / tau)
-                        self.weights[actual] = self.weights[actual] + f
-                        self.weights[prediction] = self.weights[prediction] - f
+                    if prediction == actual:
+                        continue
+                    f = data#copy.deepcopy(data)#.copy()
+                    predictedLabelWeights = self.weights[prediction]
+                    actualWeights = self.weights[actual]
+                    tau = ((predictedLabelWeights - actualWeights) * f + 1.0) / (2 * (f * f))
+                    tau = min(c, tau)
+                    f.divideAll(1.0 / tau)
+                    self.weights[prediction] -= f
+                    self.weights[actual] += f
 
-            correct = 0
-            guesses = self.classify(validationData)
-            for i, guess in enumerate(guesses):
-                correct = correct + (validationLabels[i] == guess and 1.0 or 0.0)
+            errors = 0
+            # See how weights tuned by this particular 'c' will work on held-out data
+            for data, actual in zip(validationData, validationLabels):
+                prediction = self.classify(data)[0]
+                errors += int(prediction != actual)
 
-            if correct > bestCorrect:
-                bestCorrect = correct
+            if errors < leastErrors:
                 bestWeights = self.weights
-
+                leastErrors = errors
+        
         self.weights = bestWeights
 
     def classify(self, data ):
