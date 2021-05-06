@@ -130,6 +130,38 @@ def enhancedFeatureExtractorDigit(datum):
     return features
 
 
+    """
+    has_loop=False
+    run_dfs_hash={}
+    def run_dfs(x,y):
+        if x<0 or x>=DIGIT_DATUM_WIDTH:
+            return False
+        if y<0 or y>=DIGIT_DATUM_HEIGHT:
+            return False 
+        if datum.getPixel(x,y)==2 or datum.getPixel(x,y)==1:
+            return True
+
+        if (x,y) in visited.keys():
+            return True
+
+        visited[(x,y)]=True
+        return run_dfs(x-1,y) and run_dfs(x+1,y) and run_dfs(x,y-1) and run_dfs(x,y+1)
+
+    for x in range(DIGIT_DATUM_WIDTH):
+        for y in range(DIGIT_DATUM_HEIGHT):
+            visited={}
+            if datum.getPixel(x,y)==0:
+                if run_dfs(x,y)==True:
+                    has_loop=True
+                    break
+
+    features =  basicFeatureExtractorDigit(datum)
+    features["has_loop"] =has_loop
+
+    return features
+    """
+
+
 
 def basicFeatureExtractorPacman(state):
     """
